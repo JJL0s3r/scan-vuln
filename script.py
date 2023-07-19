@@ -5,7 +5,7 @@ import whois
 from bs4 import BeautifulSoup
 import os
 
-text = "Sentinel Scan"
+text = "Sentinel  Scan"
 font = pyfiglet.Figlet()
 
 banner = font.renderText(text)
@@ -21,105 +21,120 @@ def show_commands():
     print("'ss xss' - Verificar vulnerabilidade de XSS\n")
     print("'ss sql' - Verificar vulnerabilidade de SQL injection\n")
     print("'ss idor' - Verificar vulnerabilidade de IDOR\n")
-    print("'ss cmd' - Executar comando do sistema\n")
-    print("'ss csrf' - Verificar vulnerabilidade de CSRF\n")
-    print("'ss lfi' - Verificar vulnerabilidade de LFI\n")
-    print("'ss xssi' - Verificar vulnerabilidade de XSSI\n")
     print("'info' - Mostrar informações sobre o programa\n")
     print("'commands' - Mostrar os comandos disponíveis\n")
     print("'clear' - Limpar a tela\n")
-    print("'exit' - Sair\n")
+    print("'exit' - Sair\n\n\n")
+    
+    print("Se caso na hora de fazer o scan, der algum erro quando você informa a url, tente iniciar o script novamente e colocar sem 'http' ou 'https' ou adiciona-los\n")
 
 show_commands()
 
-def save_report(report, filename):
-    with open(filename, "w") as file:
-        file.write(report)
 
 def scan_ports(url, ports):
-    # Obtém o IP da URL
-    ip = socket.gethostbyname(url)
-    # Loop através das portas e verifica se elas estão abertas
-    for port in ports:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(1)
-        result = sock.connect_ex((ip, port))
-        if result == 0:
-            print(f"A porta {port} está aberta.")
-        else:
-            print(f"A porta {port} está fechada.")
-        sock.close()
+    try:
+        # Obtém o IP da URL
+        ip = socket.gethostbyname(url)
+        # Loop através das portas e verifica se elas estão abertas
+        for port in ports:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1)
+            result = sock.connect_ex((ip, port))
+            if result == 0:
+                print(f"A porta {port} está aberta.")
+            else:
+                print(f"A porta {port} está fechada.")
+            sock.close()
+    except Exception as e:
+        print(f"Ocorreu um erro inesperado: {e}")
 
 def get_server_ip(url):
-    # Obtém o IP do servidor
-    ip = socket.gethostbyname(url)
-    print(f"O IP do servidor {url} é: {ip}")
+    try:
+        # Obtém o IP do servidor
+        ip = socket.gethostbyname(url)
+        print(f"O IP do servidor {url} é: {ip}")
+    except socket.gaierror:
+        print("Erro ao obter o IP do servidor. Verifique a URL e a conexão com a Internet.")
+    except Exception as e:
+        print(f"Ocorreu um erro inesperado: {e}")
 
 def perform_whois(url):
-    # Realiza a função do whois
-    domain = whois.whois(url)
-    print("Informações WHOIS:")
-    print(f"Nome do domínio: {domain.domain_name}")
-    print(f"Organização: {domain.org}")
-    print(f"Registrante: {domain.registrar}")
-    print(f"Servidores de nome: {domain.name_servers}")
-    print(f"Data de criação: {domain.creation_date}")
-    print(f"Data de expiração: {domain.expiration_date}")
-    print(f"Data de atualização: {domain.updated_date}")
-    # Exibe os status
-    print("Status:")
-    for status in domain.status:
-        print(status)
-    print(f"Email do registrante: {domain.emails}")
-    print(f"País: {domain.country}")
-    print(f"Estado: {domain.state}")
-    print(f"Cidade: {domain.city}")
-    print(f"Endereço: {domain.address}")
-    print(f"Código postal: {domain.zipcode}")
+    try:
+        # Realiza a função do whois
+        domain = whois.whois(url)
+        print("\n\nInformações WHOIS:\n\n")
+        print(f"Nome do domínio: {domain.domain_name}\n")
+        print(f"Organização: {domain.org}\n")
+        print(f"Registrante: {domain.registrar}\n")
+        print(f"Servidores de nome: {domain.name_servers}\n")
+        print(f"Data de criação: {domain.creation_date}\n")
+        print(f"Data de expiração: {domain.expiration_date}\n")
+        print(f"Data de atualização: {domain.updated_date}\n")
+
+        # Exibe os status
+        print(f"Status: {''.join(domain.status)}")
+
+        print(f"\nEmail do registrante: {domain.emails}")
+        print(f"\nPaís: {domain.country}")
+        print(f"\nEstado: {domain.state}")
+        print(f"\nCidade: {domain.city}")
+        print(f"\nEndereço: {domain.address}")
+        print(f"\nCódigo postal: {domain.zipcode}")
+
+    except whois.parser.PywhoisError as e:
+        print("Erro ao obter informações WHOIS. Verifique a URL e tente novamente.")
+    except Exception as e:
+        print(f"Ocorreu um erro inesperado: {e}")
+
 
 def check_xss(url):
-    # Verifica se há vulnerabilidade de XSS
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, "html.parser")
-    forms = soup.find_all("form")
+    try:
+        # Verifica se há vulnerabilidade de XSS
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, "html.parser")
+        forms = soup.find_all("form")
 
-    if len(forms) > 0:
-        print("Vulnerabilidade de XSS encontrada!")
-        print("Detalhes:\n")
-        for form in forms:
-            action = form.get("action")
-            method = form.get("method")
-            inputs = form.find_all("input")
-            print(f"Formulário encontrado:")
-            print(f" - Action: {action}")
-            print(f" - Método: {method}\n")
+        if len(forms) > 0:
+            print("Vulnerabilidade de XSS encontrada!")
+            print("Detalhes:\n")
+            for form in forms:
+                action = form.get("action")
+                method = form.get("method")
+                inputs = form.find_all("input")
+                print(f"Formulário encontrado:")
+                print(f" - Action: {action}")
+                print(f" - Método: {method}\n")
 
-            for input_field in inputs:
-                input_name = input_field.get("name")
-                input_type = input_field.get("type")
-                input_value = input_field.get("value", "")
-                input_placeholder = input_field.get("placeholder", "")
-                input_label = input_field.find_previous("label")
+                for input_field in inputs:
+                    input_name = input_field.get("name")
+                    input_type = input_field.get("type")
+                    input_value = input_field.get("value", "")
+                    input_placeholder = input_field.get("placeholder", "")
+                    input_label = input_field.find_previous("label")
 
-                print(f"   Campo de entrada:\n")
-                print(f"   - Nome: {input_name}")
-                print(f"   - Tipo: {input_type}")
-                print(f"   - Valor: {input_value}")
-                print(f"   - Placeholder: {input_placeholder}\n")
+                    print(f"   Campo de entrada:\n")
+                    print(f"   - Nome: {input_name}")
+                    print(f"   - Tipo: {input_type}")
+                    print(f"   - Valor: {input_value}")
+                    print(f"   - Placeholder: {input_placeholder}\n")
 
-                if input_label:
-                    label_text = input_label.get_text().strip()
-                    print(f"   - Rótulo: {label_text}")
+                    if input_label:
+                        label_text = input_label.get_text().strip()
+                        print(f"   - Rótulo: {label_text}")
 
-                xss_type = get_xss_type(input_field)
-                print(f"   - Tipo de XSS: {xss_type}\n")
+                    xss_type = get_xss_type(input_field)
+                    print(f"   - Tipo de XSS: {xss_type}\n")
 
-                print(f"   - Relatório: A vulnerabilidade de XSS do tipo '{xss_type}' pode ser explorada injetando código malicioso nos campos de entrada acima, permitindo a execução de scripts não autorizados no contexto do usuário. Recomenda-se implementar a filtragem e a validação adequadas para evitar a inserção de scripts maliciosos e garantir a segurança da aplicação.")
+                    print(f"   - Relatório: A vulnerabilidade de XSS do tipo '{xss_type}' pode ser explorada injetando código malicioso nos campos de entrada acima, permitindo a execução de scripts não autorizados no contexto do usuário. Recomenda-se implementar a filtragem e a validação adequadas para evitar a inserção de scripts maliciosos e garantir a segurança da aplicação.")
 
-                print()
+                    print()
 
-    else:
-        print("Nenhuma vulnerabilidade de XSS encontrada.")
+        else:
+            print("Nenhuma vulnerabilidade de XSS encontrada.")
+    except requests.exceptions.RequestException as e:
+        print("Erro ao fazer a requisição. Verifique a URL e a conexão com o servidor.")
+    except Exception as e:
+        print(f"Ocorreu um erro inesperado: {e}")
 
 def get_xss_type(input_field):
     input_type = input_field.get("type")
@@ -134,74 +149,47 @@ def get_xss_type(input_field):
             return "XSS DOM"
 
     return "Desconhecido"
-
 def check_sql_injection(url):
-    # Verifica se há vulnerabilidade de SQL injection
-    payload = "' OR '1'='1"
-    response = requests.get(url + payload)
-    report = ""
+    try:
+        # Verifica se há vulnerabilidade de SQL injection
+        payload = "' OR '1'='1"
+        response = requests.get(url + payload)
 
-    if payload in response.text:
-        report += "Vulnerabilidade de SQL injection encontrada!\n"
-        report += "Detalhes:\n"
-        report += f" - URL vulnerável: {url}\n"
-        report += f" - Payload injetado: {payload}\n"
-        report += " - Relatório: A vulnerabilidade de SQL injection pode ser explorada inserindo código SQL malicioso em campos de entrada, permitindo a execução não autorizada de comandos SQL. Recomenda-se implementar práticas seguras de codificação, como o uso de parâmetros parametrizados ou consultas preparadas, para evitar a injeção de SQL e proteger o sistema contra ataques.\n"
-
-    else:
-        report += "Nenhuma vulnerabilidade de SQL injection encontrada.\n"
-
-    save_report(report, "sql_injection_report.txt")
+        if payload in response.text:
+            print("Vulnerabilidade de SQL injection encontrada!")
+            print("Detalhes:")
+            print(f" - URL vulnerável: {url}")
+            print(f" - Payload injetado: {payload}")
+            print(" - Relatório: A vulnerabilidade de SQL injection pode ser explorada inserindo código SQL malicioso em campos de entrada, permitindo a execução não autorizada de comandos SQL. Recomenda-se implementar práticas seguras de codificação, como o uso de parâmetros parametrizados ou consultas preparadas, para evitar a injeção de SQL e proteger o sistema contra ataques.")
+        else:
+            print("Nenhuma vulnerabilidade de SQL injection encontrada.")
+    except requests.exceptions.RequestException as e:
+        print("Erro ao fazer a requisição. Verifique a URL e a conexão com o servidor.")
+    except Exception as e:
+        print(f"Ocorreu um erro inesperado: {e}")
 
 def check_idor(url):
-    # Verifica se há vulnerabilidade de Insecure Direct Object Reference (IDOR)
-    response = requests.get(url)
-    report = ""
+    try:
+        # Verifica se há vulnerabilidade de Insecure Direct Object Reference (IDOR)
+        response = requests.get(url)
 
-    if response.status_code == 200:
-        report += "Vulnerabilidade de IDOR encontrada!\n"
-        report += "Detalhes:\n"
-        report += f" - URL vulnerável: {url}\n"
-        report += " - Relatório: A vulnerabilidade de IDOR permite que um usuário acesse recursos não autorizados, pois os identificadores são previsíveis ou não são verificados corretamente. Recomenda-se implementar uma estratégia de controle de acesso adequada e garantir que a autenticação e a autorização sejam aplicadas corretamente em todas as partes do sistema.\n"
+        if response.status_code == 200:
+            print("Vulnerabilidade de IDOR encontrada!")
+            print("Detalhes:")
+            print(f" - URL vulnerável: {url}")
+            print(" - Relatório: A vulnerabilidade de IDOR permite que um usuário acesse recursos não autorizados, pois os identificadores são previsíveis ou não são verificados corretamente. Recomenda-se implementar uma estratégia de controle de acesso adequada e garantir que a autenticação e a autorização sejam aplicadas corretamente em todas as partes do sistema.")
 
-    else:
-        report += "Nenhuma vulnerabilidade de IDOR encontrada.\n"
-
-    save_report(report, "idor_report.txt")
-
-def execute_system_command(command):
-    # Executa um comando do sistema
-    os.system(command)
-
-def check_csrf(url):
-    # Verifica se há vulnerabilidade de CSRF
-    report = ""
-    # Implemente a verificação de CSRF aqui
-    report += "Vulnerabilidade de CSRF encontrada!\n"
-    report += "Detalhes:\n"
-    report += " - Relatório: A vulnerabilidade de CSRF permite que um invasor forje solicitações maliciosas em nome de usuários autenticados, levando a ações não autorizadas. Para mitigar essa vulnerabilidade, recomenda-se implementar mecanismos de proteção, como tokens CSRF, que verifiquem a origem das solicitações e previnam ataques forjados.\n"
-
-    save_report(report, "csrf_report.txt")
-
-def check_lfi(url):
-    # Verifica se há vulnerabilidade de LFI
-    # Implemente a verificação de LFI aqui
-
-    print("Vulnerabilidade de LFI verificada.")
-
-def check_xssi(url):
-    # Verifica se há vulnerabilidade de XSSI
-    # Implemente a verificação de XSSI aqui
-
-    print("Vulnerabilidade de XSSI verificada.")
+        else:
+            print("Nenhuma vulnerabilidade de IDOR encontrada.")
+    except Exception as e:
+        print(f"Ocorreu um erro inesperado: {e}")
 
 # Loop infinito para continuar pedindo comandos
 while True:
     # Solicita o comando ao usuário
-    command = input(">>>")
+    command = input("\n>>> ")
 
     if command == "info":
-        # Mostra informações sobre o programa
         print("""Bem-vindo ao Sentinel Scan, a poderosa ferramenta para profissionais de segurança da informação. Nosso programa foi desenvolvido para ajudar você a identificar e mitigar vulnerabilidades em sistemas e redes, garantindo a proteção de informações sensíveis. Com recursos avançados e uma interface intuitiva, o Sentinel Scan é o aliado perfeito na sua busca pela segurança cibernética.
 
 Principais recursos do Sentinel Scan:
@@ -218,23 +206,14 @@ Verificação de SQLi (Injeção de SQL): Detecte possíveis vulnerabilidades de
 
 Verificação de IDOR (Insecure Direct Object Reference): Identifique possíveis falhas de IDOR em um aplicativo da web. Com essa verificação, você pode descobrir se há objetos referenciados diretamente, sem a devida autenticação ou autorização, e tomar as medidas necessárias para corrigir essas vulnerabilidades.
 
-Verificação de CSRF (Cross-Site Request Forgery): Verifique se um aplicativo da web é vulnerável a ataques de CSRF, em que um invasor pode forjar solicitações maliciosas em nome de usuários autenticados.
-
-Verificação de LFI (Local File Inclusion): Verifique se um aplicativo da web é vulnerável a inclusão de arquivos locais arbitrários.
-
-Verificação de XSSI (Cross-Site Script Inclusion): Verifique se um aplicativo da web é vulnerável à inclusão de scripts de terceiros.
-
 Lembre-se de que o Sentinel Scan é uma ferramenta poderosa, mas a segurança cibernética é um esforço contínuo. Recomendamos que você realize verificações regulares e mantenha-se atualizado com as melhores práticas de segurança. Estamos comprometidos em ajudar você a proteger dados valiosos e garantir a integridade dos seus sistemas.
 
 Conte com o Sentinel Scan para aprimorar sua postura de segurança da informação e fortalecer suas defesas contra ameaças cibernéticas. Juntos, podemos construir um ambiente digital mais seguro e confiável.""")
 
-
     elif command == "commands":
-        # Mostra os comandos disponíveis
         show_commands()
 
     elif command == "clear":
-        # Limpa a tela
         if os.name == "posix":
             os.system("clear")  # Limpa a tela no Linux/macOS
         else:
@@ -242,7 +221,6 @@ Conte com o Sentinel Scan para aprimorar sua postura de segurança da informaç�
 
     elif command.startswith("ss"):
         if command == "ss scan":
-            # Escaneia todas as portas
             url = input("Digite a URL que deseja escanear: ")
             print("Escaneando todas as portas...")
             scan_ports(url, range(1, 65536))
@@ -251,47 +229,25 @@ Conte com o Sentinel Scan para aprimorar sua postura de segurança da informaç�
             if len(command_parts) >= 2:
                 subcommand = command_parts[1]
                 if subcommand.isdigit():
-                    # Escaneia portas específicas
                     url = input("Digite a URL que deseja escanear: ")
                     ports = [int(port) for port in subcommand.split(",")]
                     print("Escaneando portas específicas...")
                     scan_ports(url, ports)
                 elif subcommand == "ip":
-                    # Obtém o IP do servidor
                     url = input("Digite a URL do servidor: ")
                     get_server_ip(url)
                 elif subcommand == "whois":
-                    # Realiza a função do whois
                     url = input("Digite a URL do domínio: ")
                     perform_whois(url)
                 elif subcommand == "xss":
-                    # Verifica se há vulnerabilidade de XSS
                     url = input("Digite a URL do site: ")
                     check_xss(url)
                 elif subcommand == "sql":
-                    # Verifica se há vulnerabilidade de SQL injection
                     url = input("Digite a URL do site: ")
                     check_sql_injection(url)
                 elif subcommand == "idor":
-                    # Verifica se há vulnerabilidade de IDOR
                     url = input("Digite a URL do site: ")
                     check_idor(url)
-                elif subcommand == "cmd":
-                    # Executa um comando do sistema
-                    command = input("Digite o comando que deseja executar: ")
-                    execute_system_command(command)
-                elif subcommand == "csrf":
-                    # Verifica se há vulnerabilidade de CSRF
-                    url = input("Digite a URL do site: ")
-                    check_csrf(url)
-                elif subcommand == "lfi":
-                    # Verifica se há vulnerabilidade de LFI
-                    url = input("Digite a URL do site: ")
-                    check_lfi(url)
-                elif subcommand == "xssi":
-                    # Verifica se há vulnerabilidade de XSSI
-                    url = input("Digite a URL do site: ")
-                    check_xssi(url)
                 else:
                     print("Comando inválido. Por favor, tente novamente.")
             else:
