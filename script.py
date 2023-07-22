@@ -3,7 +3,11 @@ import pyfiglet
 import requests
 import whois
 from bs4 import BeautifulSoup
+from urllib.parse import urlparse, parse_qs
 import os
+import time
+import traceback
+from urllib.parse import quote
 
 text = "Sentinel  Scan"
 font = pyfiglet.Figlet()
@@ -11,18 +15,19 @@ font = pyfiglet.Figlet()
 banner = font.renderText(text)
 print(banner)
 
+
 # Exibe os comandos disponíveis
 def show_commands():
     print("Comandos disponíveis:\n")
-    print("'ss' - Escanear portas\n")
-    print("'ss scan' - Escanear todas as portas\n")
+    print("'ss' or 'sentinel scan' - Exibir tela inicial\n")
     print("'ss ip' - Obter o IP do servidor\n")
     print("'ss whois' - Realizar WHOIS\n")
-    print("'ss xss' - Verificar vulnerabilidade de XSS\n")
-    print("'ss sql' - Verificar vulnerabilidade de SQL injection\n")
-    print("'ss idor' - Verificar vulnerabilidade de IDOR\n")
+    print("'ss -p' - Escanear todas as portas\n")
+    print("'ss -x' - Verificar vulnerabilidade de XSS\n")
+    print("'ss -s' - Verificar vulnerabilidade de SQL injection\n")
+    print("'ss -i' - Verificar vulnerabilidade de IDOR\n")
+    print("'ss -v' - Verificar se há vulnerabilidade XSS, IDOR e SQL injection\n")
     print("'info' - Mostrar informações sobre o programa\n")
-    print("'commands' - Mostrar os comandos disponíveis\n")
     print("'clear' - Limpar a tela\n")
     print("'exit' - Sair\n\n\n")
     
@@ -58,13 +63,51 @@ def get_server_ip(url):
     except Exception as e:
         print(f"Ocorreu um erro inesperado: {e}")
 
+def get_subdomains(url):
+    try:
+        # Obtém o IP do servidor principal
+        main_ip = socket.gethostbyname(url)
+
+        # Obtém todos os endereços IP associados aos subdomínios
+        subdomains = [f"{subdomain}: {socket.gethostbyname(subdomain)}" for subdomain in socket.gethostbyname_ex(url)[1]]
+        
+        print("\nSubdomínios encontrados:\n")
+        for subdomain in subdomains:
+            print(subdomain)
+
+    except socket.gaierror:
+        print("Erro ao obter informações de subdomínios. Verifique a URL e a conexão com a Internet.")
+    except Exception as e:
+        print(f"Ocorreu um erro inesperado: {e}")
+
+
+def get_subdomains(url):
+    try:
+        # Obtém o IP do servidor principal
+        main_ip = socket.gethostbyname(url)
+
+        # Obtém todos os endereços IP associados aos subdomínios
+        subdomains = [f"{subdomain}: {socket.gethostbyname(subdomain)}" for subdomain in socket.gethostbyname_ex(url)[1]]
+        
+        print("\nSubdomínios encontrados:\n")
+        for subdomain in subdomains:
+            print(subdomain)
+
+    except socket.gaierror:
+        print("Erro ao obter informações de subdomínios. Verifique a URL e a conexão com a Internet.")
+    except Exception as e:
+        print(f"Ocorreu um erro inesperado: {e}")
+
+
 def perform_whois(url):
     try:
         # Realiza a função do whois
         domain = whois.whois(url)
         print("\n\nInformações WHOIS:\n\n")
         print(f"Nome do domínio: {domain.domain_name}\n")
-        print(f"Organização: {domain.org}\n")
+        print(f"Subdomínios: ")
+        get_subdomains(url)
+        print(f"\nOrganização: {domain.org}\n")
         print(f"Registrante: {domain.registrar}\n")
         print(f"Servidores de nome: {domain.name_servers}\n")
         print(f"Data de criação: {domain.creation_date}\n")
@@ -129,12 +172,22 @@ def check_xss(url):
 
                     print()
 
+            # Como testar essa falha:
+            print("   Como testar essa falha:\n")
+            print("      1. Acesse o site vulnerável e localize os formulários com campos de entrada.")
+            print("      2. Tente inserir um código malicioso no campo de entrada.")
+            print("      3. Se o código malicioso for executado e você notar um comportamento anômalo, a vulnerabilidade de XSS está presente.")
+            print("      4. Caso nada aconteça ou você veja a mensagem 'Nenhuma vulnerabilidade de XSS encontrada', o site pode estar seguro contra essa vulnerabilidade.")
+            print("      5. Lembre-se de que testar sites sem permissão pode ser ilegal e antiético. Sempre obtenha autorização antes de realizar testes de segurança.")
+
         else:
             print("Nenhuma vulnerabilidade de XSS encontrada.")
     except requests.exceptions.RequestException as e:
         print("Erro ao fazer a requisição. Verifique a URL e a conexão com o servidor.")
     except Exception as e:
         print(f"Ocorreu um erro inesperado: {e}")
+
+
 
 def get_xss_type(input_field):
     input_type = input_field.get("type")
@@ -149,11 +202,14 @@ def get_xss_type(input_field):
             return "XSS DOM"
 
     return "Desconhecido"
+
+
 def check_sql_injection(url):
     try:
         # Verifica se há vulnerabilidade de SQL injection
         payload = "' OR '1'='1"
-        response = requests.get(url + payload)
+        encoded_payload = quote(payload)  # Escapa o payload SQL corretamente
+        response = requests.get(url + encoded_payload)
 
         if payload in response.text:
             print("Vulnerabilidade de SQL injection encontrada!")
@@ -168,6 +224,8 @@ def check_sql_injection(url):
     except Exception as e:
         print(f"Ocorreu um erro inesperado: {e}")
 
+
+
 def check_idor(url):
     try:
         # Verifica se há vulnerabilidade de Insecure Direct Object Reference (IDOR)
@@ -177,12 +235,19 @@ def check_idor(url):
             print("Vulnerabilidade de IDOR encontrada!")
             print("Detalhes:")
             print(f" - URL vulnerável: {url}")
-            print(" - Relatório: A vulnerabilidade de IDOR permite que um usuário acesse recursos não autorizados, pois os identificadores são previsíveis ou não são verificados corretamente. Recomenda-se implementar uma estratégia de controle de acesso adequada e garantir que a autenticação e a autorização sejam aplicadas corretamente em todas as partes do sistema.")
 
+            # Obtém os parâmetros da URL
+            parsed_url = urlparse(url)
+            query_params = parse_qs(parsed_url.query)
+            print(f" - Parâmetros utilizados: {query_params}\n")
+
+            print("\nInformações adicionais:")
+            print("  Ao acessar a URL com parâmetros não autorizados, foram encontrados objetos ou recursos que não deveriam ser acessíveis a todos os usuários. Isso pode permitir o acesso a dados confidenciais ou ações não permitidas. Recomenda-se implementar uma estratégia de controle de acesso adequada, garantindo que as autorizações sejam verificadas corretamente e que apenas usuários autorizados possam acessar recursos confidenciais.")
         else:
             print("Nenhuma vulnerabilidade de IDOR encontrada.")
     except Exception as e:
         print(f"Ocorreu um erro inesperado: {e}")
+        
 
 # Loop infinito para continuar pedindo comandos
 while True:
@@ -190,42 +255,66 @@ while True:
     command = input("\n>>> ")
 
     if command == "info":
-        print("""Bem-vindo ao Sentinel Scan, a poderosa ferramenta para profissionais de segurança da informação. Nosso programa foi desenvolvido para ajudar você a identificar e mitigar vulnerabilidades em sistemas e redes, garantindo a proteção de informações sensíveis. Com recursos avançados e uma interface intuitiva, o Sentinel Scan é o aliado perfeito na sua busca pela segurança cibernética.
+        print("""\n\n   Bem-vindo ao Sentinel Scan, a poderosa ferramenta para profissionais de segurança da informação. Nosso programa foi desenvolvido para ajudar você a         identificar e mitigar vulnerabilidades em sistemas e redes, garantindo a proteção de informações sensíveis. Com recursos avançados e uma interface intuitiva, o Sentinel Scan é o aliado perfeito na sua busca pela segurança cibernética.
 
-Principais recursos do Sentinel Scan:
+    Principais recursos do Sentinel Scan:
 
-Varredura de portas: Identifique as portas abertas em um determinado sistema, permitindo que você conheça quais serviços estão disponíveis para acesso externo. Com essa informação, você pode tomar medidas proativas para fechar portas não utilizadas ou configurá-las adequadamente para evitar possíveis ataques.
+        Varredura de portas: Identifique as portas abertas em um determinado sistema, permitindo que você conheça quais serviços estão disponíveis para acesso externo. Com essa informação, você pode tomar medidas proativas para fechar portas não utilizadas ou configurá-las adequadamente para evitar possíveis ataques.
 
-Rastreamento de IP: Obtenha o endereço IP correspondente a uma URL fornecida. Com essa funcionalidade, você poderá identificar a localização geográfica de um servidor, analisar informações relacionadas a ele e melhorar sua compreensão dos ativos que compõem sua infraestrutura.
+        Rastreamento de IP: Obtenha o endereço IP correspondente a uma URL fornecida. Com essa funcionalidade, você poderá identificar a localização geográfica de um servidor, analisar informações relacionadas a ele e melhorar sua compreensão dos ativos que compõem sua infraestrutura.
 
-Consulta Whois: Obtenha informações detalhadas sobre o registro de um domínio, incluindo dados de registro, informações de contato e data de expiração. O recurso Whois do Sentinel Scan permite que você investigue a propriedade e a autenticidade de um domínio, ajudando a identificar possíveis ameaças.
+        Consulta Whois: Obtenha informações detalhadas sobre o registro de um domínio, incluindo dados de registro, informações de contato e data de expiração. O recurso Whois do Sentinel Scan permite que você investigue a propriedade e a autenticidade de um domínio, ajudando a identificar possíveis ameaças.
 
-Verificação de XSS (Cross-Site Scripting): Identifique vulnerabilidades de XSS em um aplicativo da web. O Sentinel Scan analisa minuciosamente as entradas de usuário em um site para identificar possíveis vetores de ataque de XSS, permitindo que você tome medidas corretivas e evite a execução de scripts maliciosos em navegadores dos usuários.
+        Verificação de XSS (Cross-Site Scripting): Identifique vulnerabilidades de XSS em um aplicativo da web. O Sentinel Scan analisa minuciosamente as entradas de usuário em um site para identificar possíveis vetores de ataque de XSS, permitindo que você tome medidas corretivas e evite a execução de scripts maliciosos em navegadores dos usuários.
 
-Verificação de SQLi (Injeção de SQL): Detecte possíveis vulnerabilidades de injeção de SQL em sistemas de banco de dados. Com o Sentinel Scan, você pode identificar pontos fracos em consultas SQL e tomar medidas para proteger suas aplicações contra ataques que explorem essas vulnerabilidades.
+        Verificação de SQLi (Injeção de SQL): Detecte possíveis vulnerabilidades de injeção de SQL em sistemas de banco de dados. Com o Sentinel Scan, você pode identificar pontos fracos em consultas SQL e tomar medidas para proteger suas aplicações contra ataques que explorem essas vulnerabilidades.
 
-Verificação de IDOR (Insecure Direct Object Reference): Identifique possíveis falhas de IDOR em um aplicativo da web. Com essa verificação, você pode descobrir se há objetos referenciados diretamente, sem a devida autenticação ou autorização, e tomar as medidas necessárias para corrigir essas vulnerabilidades.
+        Verificação de IDOR (Insecure Direct Object Reference): Identifique possíveis falhas de IDOR em um aplicativo da web. Com essa verificação, você pode descobrir se há objetos referenciados diretamente, sem a devida autenticação ou autorização, e tomar as medidas necessárias para corrigir essas vulnerabilidades.
 
-Lembre-se de que o Sentinel Scan é uma ferramenta poderosa, mas a segurança cibernética é um esforço contínuo. Recomendamos que você realize verificações regulares e mantenha-se atualizado com as melhores práticas de segurança. Estamos comprometidos em ajudar você a proteger dados valiosos e garantir a integridade dos seus sistemas.
+        Lembre-se de que o Sentinel Scan é uma ferramenta poderosa, mas a segurança cibernética é um esforço contínuo. Recomendamos que você realize verificações regulares e mantenha-se atualizado com as melhores práticas de segurança. Estamos comprometidos em ajudar você a proteger dados valiosos e garantir a integridade dos seus sistemas.
 
-Conte com o Sentinel Scan para aprimorar sua postura de segurança da informação e fortalecer suas defesas contra ameaças cibernéticas. Juntos, podemos construir um ambiente digital mais seguro e confiável.""")
+        Conte com o Sentinel Scan para aprimorar sua postura de segurança da informação e fortalecer suas defesas contra ameaças cibernéticas. Juntos, podemos construir um ambiente digital mais seguro e confiável.\n\n""")
 
-    elif command == "commands":
+    elif command == "ss":
+        print(banner)
         show_commands()
+    elif command == "sentinel scan":
+        print(banner)
+        show_commands()
+    elif command == "ss -v": # Verifica se há XSS, IDOR e SQLi
+        url = input("Digite a URL do domínio: ")
+        print("Escaneando vulnerabilidades (XSS, IDOR e SQLi)... ")
+        print("\n\n")
+        time.sleep(1)
+        check_xss(url)
+        print("\n\n")
+        time.sleep(1)
+        check_sql_injection(url)
+        print("\n\n")
+        time.sleep(1)
+        check_idor(url)
+        print("\n\n")
+
 
     elif command == "clear":
         if os.name == "posix":
             os.system("clear")  # Limpa a tela no Linux/macOS
         else:
             os.system("cls")  # Limpa a tela no Windows
-
+    
     elif command.startswith("ss"):
-        if command == "ss scan":
+        if command == "ss -p":
             url = input("Digite a URL que deseja escanear: ")
             print("Escaneando todas as portas...")
             scan_ports(url, range(1, 65536))
         elif command.startswith("ss "):
             command_parts = command.split()
+
+    
+
+   
+            
+            
             if len(command_parts) >= 2:
                 subcommand = command_parts[1]
                 if subcommand.isdigit():
@@ -239,19 +328,22 @@ Conte com o Sentinel Scan para aprimorar sua postura de segurança da informaç�
                 elif subcommand == "whois":
                     url = input("Digite a URL do domínio: ")
                     perform_whois(url)
-                elif subcommand == "xss":
+                elif subcommand == "-x":
                     url = input("Digite a URL do site: ")
                     check_xss(url)
-                elif subcommand == "sql":
+                elif subcommand == "-s":
                     url = input("Digite a URL do site: ")
                     check_sql_injection(url)
-                elif subcommand == "idor":
+                elif subcommand == "-i":
                     url = input("Digite a URL do site: ")
                     check_idor(url)
                 else:
                     print("Comando inválido. Por favor, tente novamente.")
             else:
                 print("Comando inválido. Por favor, tente novamente.")
+                
+            
+                
     elif command == "exit":
         break
     else:
